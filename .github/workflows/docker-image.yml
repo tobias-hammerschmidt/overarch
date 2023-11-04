@@ -7,11 +7,48 @@ on:
     branches: [ "main" ]
 
 jobs:
+  workflow_config:
+    runs-on: ubuntu-latest
+    outputs:
+      do_release: ${{ steps.config.outputs.do_release }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Configure workflow
+        id: config
+        env:
+          ACTOR: ${{ github.actor }}
+          EVENT_ACTION: ${{ github.event.action }}
+          REF_TYPE: ${{ github.event.ref_type }}
+          REF: ${{ github.event.ref }}
+        run: |
+          cat <<-EOF
+            ::group::Debug Info
+            GITHUB_EVENT_NAME       : '${GITHUB_EVENT_NAME}'
+            EVENT_ACTION            : '${EVENT_ACTION}'
+            REF_TYPE                : '${REF_TYPE}'
+            REF                     : '${REF}'
+            ACTOR                   : '${ACTOR}'
+            GITHUB_REPOSITORY_OWNER : '${GITHUB_REPOSITORY_OWNER}'
+            ::endgroup::
+          EOF
+
+          # Do a release when a git tag starting with 'v' has been created by a suitable user.
+          # (We match against github.repository_owner as a kludge so that forked repos can release themselves when testing the workflow)
+
+          if [[ "${GITHUB_EVENT_NAME}" == "create" && "${REF_TYPE}" == "tag" && "${REF}" == v* && \
+                ( "${ACTOR}" == "${GITHUB_REPOSITORY_OWNER}" ) \
+             ]]; then
+            echo "::notice title=::This run will release '${REF}'"
+            echo "do_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "This run will NOT make a release"
+          fi
 
   build:
-  
+    needs: workflow_config   
     if: needs.workflow_config.outputs.do_release == 'true'
-    
     runs-on: ubuntu-latest
 
     steps:

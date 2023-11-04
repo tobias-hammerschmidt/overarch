@@ -7,7 +7,7 @@ RUN apk add --no-cache \
   ca-certificates
 
 RUN wget \
-  "https://github.com/soulspace-org/overarch/releases/download/v${OVERARCH_VERSION}/overarch.jar" \
+  "https://github.com/soulspace-org/overarch/releases/download/${OVERARCH_VERSION}/overarch.jar" \
   -O /opt/overarch.jar
 
 FROM eclipse-temurin:17-jre-jammy
